@@ -1,2 +1,4 @@
 *.dSYM
+enc_client
+enc_server
 keygen

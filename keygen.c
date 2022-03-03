@@ -1,3 +1,7 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <time.h>
+#include "constants.h"
 #include "keygen.h"
 
 /**
@@ -7,7 +11,7 @@
 int main(int argc, char* argv[]) {
     if (argc != 2 || atoi(argv[1]) <= 0) {
         fprintf(stderr, "Usage: %s <length>\n", argv[0]);
-        return EXIT_FAILURE;
+        return 1;
     }
 
     int len;
@@ -19,7 +23,7 @@ int main(int argc, char* argv[]) {
 
     free(key);
     key = NULL;
-    return EXIT_SUCCESS;
+    return 0;
 }
 
 /**
@@ -33,13 +37,13 @@ char* generateKey(int len) {
         return NULL;
     }
 
-    srand(time(NULL));
     char c, *buffer;
     int i, num;
 
+    srand(time(NULL));
     buffer = (char*)calloc(len + 2, sizeof(char));
-
     i = 0;
+    
     while (i < len) {
         num = rand() % sizeof(ALLOWED_CHARS);
         c = ALLOWED_CHARS[num];
