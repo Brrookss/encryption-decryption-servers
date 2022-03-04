@@ -10,9 +10,9 @@
 #include "enc_client.h"
 
 /**
- * Driver function for encryption client. Arguments are first verified before an attempt to
- * connect to the server is made. Once connection is authenticated, plaintext and key are sent
- * to be encrypted. The resulting ciphertext is then sent to stdout
+ * Driver for encryption client. Arguments are first verified before an attempt to connect 
+ * to the server is made. Once connection is authenticated, plaintext and key are sent to
+ * be encrypted. The resulting ciphertext is then sent to stdout
  */
 int main(int argc, char* argv[]) {
     if (argc != 4) {
@@ -20,7 +20,7 @@ int main(int argc, char* argv[]) {
         exit(1);
     }
 
-    char *cwd, *plaintext, *key, *auth, *msg, *encrypted;
+    char *cwd, *plaintext, *key, *auth, *message, *encrypted;
     int plaintext_fd, key_fd, sock_fd;
     struct sockaddr_in server_address;
 
@@ -41,7 +41,7 @@ int main(int argc, char* argv[]) {
     key = (char*)calloc(PATH_BUFFER_SIZE, sizeof(char));
     getData(key_fd, key, PATH_BUFFER_SIZE);
 
-    if (!allowedChars(plaintext) || !sufficientKey(key, strlen(plaintext))) {
+    if (!allowedChars(plaintext) || !allowedChars(key) || !sufficientLength(key, strlen(plaintext))) {
         free(plaintext); plaintext = NULL;
         free(key); key = NULL;
         exit(1);
@@ -49,28 +49,28 @@ int main(int argc, char* argv[]) {
 
     initAddressStruct(&server_address, atoi(argv[3]));
     sock_fd = socket(AF_INET, SOCK_STREAM, 0);
-    auth = appendMessageTerm(getAuthMessage());
+    auth = appendMessageSeperator(getAuthMessage());
 
-    if (!makeSocketConnection(sock_fd, (struct sockaddr*)&server_address, sizeof(server_address)) || !sendMessage(sock_fd, auth) || !authenticated(sock_fd)) {
+    if (!makeSocketConnection(sock_fd, (struct sockaddr*)&server_address, sizeof(server_address)) || !authenticated(sock_fd, auth)) {
         free(plaintext); plaintext = NULL;
         free(key); key = NULL;
         free(auth); auth = NULL;
         exit(2);
     }
 
-    plaintext = appendMessageTerm(plaintext);
-    key = appendMessageTerm(key);
-    msg = concatenate(plaintext, key);
-    sendMessage(sock_fd, msg);
+    plaintext = appendMessageSeperator(plaintext);
+    key = appendMessageSeperator(key);
+    message = concatenate(plaintext, key);
+    sendMessage(sock_fd, message);
 
     encrypted = (char*)calloc(strlen(plaintext), sizeof(char));
-    getResponse(sock_fd, encrypted, sizeof(encrypted));
+    getResponse(sock_fd, encrypted, strlen(plaintext) * sizeof(char));
     close(sock_fd);
     puts(encrypted);
 
     free(plaintext); plaintext = NULL;
     free(key); key = NULL;
-    free(msg); msg = NULL;
+    free(message); message = NULL;
     free(auth); auth = NULL;
     free(encrypted); encrypted = NULL;
     exit(0);
@@ -80,57 +80,59 @@ int main(int argc, char* argv[]) {
  * Determines if string is composed exclusively of characters in the allowed character set
  */
 int allowedChars(char* s) {
-    int *allowed, i, num, stat;
+    int *allowed, i, num, ret;
 
     allowed = createAllowedCharsHash();
     i = 0;
-    stat = 1;
-
-    while (s[i] != '\0' && stat == 1) {
+    ret = 1;
+    while (s[i] && ret) {
         num = s[i++];
         if (!allowed[num]) {
-            fprintf(stderr, "allowedChars()\n");
-            stat = 0;
+            fprintf(stderr, "allowedChars(): Invalid character(s)\n");
+            ret = 0;
         }
     }
     free(allowed);
     allowed = NULL;
-    return stat;
+    return ret;
 }
 
 /**
- * Creates a new character array after appending message terminator. Passed
- * array is deallocated
+ * Creates a new character array after appending message seperator; passed array is deallocated
  */
-char* appendMessageTerm(char* msg) {
+char* appendMessageSeperator(char* message) {
     char* buffer;
+    int len;
 
-    buffer = (char*)calloc(strlen(msg) + strlen(MESSAGE_TERM) + 1, sizeof(char));
-    strcpy(buffer, msg);
-    strcat(buffer, MESSAGE_TERM);
+    len = strlen(message) + strlen(MESSAGE_SEPERATOR);
+    buffer = (char*)calloc(len + 1, sizeof(char));
+    strcpy(buffer, message);
+    strcat(buffer, MESSAGE_SEPERATOR);
 
-    free(msg);
-    msg = NULL;
+    free(message);
+    message = NULL;
     return buffer;
 }
 
 /**
- * Determines if authentication message was received
+ * Determines if authentication confirmation message is received from server
  */
-int authenticated(int sock_fd) {
-    char buffer[256];
+int authenticated(int sock_fd, char* auth) {
+    char buffer[32];
     int received;
 
+    sendMessage(sock_fd, auth);
+
     memset(buffer, '\0', sizeof(buffer));
-    received = recv(sock_fd, &buffer, sizeof(buffer), 0);
+    received = recv(sock_fd, &buffer, sizeof(buffer) - 1, 0);
     if (received == -1) {
         perror("recv()");
         return 0;
     }
 
-    buffer[strcspn(buffer, MESSAGE_TERM)] = '\0';
-    if (strcmp(buffer, ENC_AUTH_MESSAGE) != 0) {
-        fprintf(stderr, "authenticated()\n");
+    buffer[strcspn(buffer, MESSAGE_SEPERATOR)] = '\0';
+    if (strcmp(buffer, ACK) != 0) {
+        fprintf(stderr, "authenticated(): Unable to be authenticated by server\n");
         return 0;
     }
     return 1;
@@ -153,7 +155,7 @@ char* concatenate(const char* s1, const char* s2) {
 /**
  * Creates a hash table representing the allowed characters where each bucket is
  * represented by the ASCII numeric representation. 1 represents the character
- * being part of the allowed character set, whereas 0 represents the character being omitted
+ * being part of the allowed character set; 0 represents the character being omitted
  */
 int* createAllowedCharsHash(void) {
     int *hash, i, num;
@@ -171,24 +173,19 @@ int* createAllowedCharsHash(void) {
  * Creates a character array representing the absolute path to target in directory dir
  */
 char* createPath(char* dir, char* target) {
-    if (dir == NULL || target == NULL) {
-        fprintf(stderr, "createPath()\n");
-        return NULL;
-    }
-
-    char *buffer, fwd_slash[] = "/";
+    char *buffer, seperator[] = "/";
     int len;
 
-    len = strlen(dir) + strlen(target) + strlen(fwd_slash);
+    len = strlen(dir) + strlen(seperator) + strlen(target);
     buffer = (char*)calloc(len + 1, sizeof(char));
     strcpy(buffer, dir);
-    strcat(buffer, fwd_slash);
+    strcat(buffer, seperator);
     strcat(buffer, target);
     return buffer;
 }
 
 /**
- * Gets message to be sent to the server for authentication
+ * Gets null-terminated authentication message to be sent to server
  */
 char* getAuthMessage(void) {
     char* buffer;
@@ -200,14 +197,14 @@ char* getAuthMessage(void) {
 
 /**
  * Stores bytes from file pointed to by fd into buffer with the number of bytes read
- * determined by size. Last (non-null terminator) character is assumed to b a newline
+ * determined by size. Last (non-null terminator) character is assumed to be a newline
  * and is replaced with a null terminator
  */
 int getData(int fd, char* buffer, int size) {
     int bytes;
 
     bytes = read(fd, buffer, size);
-    buffer[bytes - 1] = '\0';
+    buffer[strcspn(buffer, FILE_TERMINATOR)] = '\0';
     return bytes;
 }
 
@@ -227,29 +224,22 @@ int getFileDesc(char* dir, char* target) {
 }
 
 /**
- * Attempts to store response in buffer using the connection determined by the socket file descriptor
+ * Attempts to store response message in buffer using the connection determined by the socket file descriptor
  */
 int getResponse(int sock_fd, char* buffer, int size) {
-    int received, i;
-
-    received = i = 0;
-    while ((received = recv(sock_fd, &buffer[i], sizeof(buffer) - i, 0)) > 0)
-        i += received;
-
+    int received;
+    
+    received = recv(sock_fd, buffer, size - 1, 0);
     if (received == -1)
         perror("recv()");
     return received;
 }
 
 /**
- * Initializes a sockaddr_in structure to be used in the socket connection. Host
- * is assumed to be localhost, so DNS lookup is omitted
- * Code is based off example from:
- * https://canvas.oregonstate.edu/courses/1884946/pages/exploration-client-server-communication-via-sockets?module_item_id=21836005
+ * Initializes a sockaddr_in structure to be used in the socket connection; localhost is assumed
  */
 void initAddressStruct(struct sockaddr_in* address, int port) {
     memset((char*)address, '\0', sizeof(*address));
-
     address->sin_family = AF_INET;
     address->sin_port = htons(port);
     inet_aton("127.0.0.1", &address->sin_addr);
@@ -259,8 +249,8 @@ void initAddressStruct(struct sockaddr_in* address, int port) {
  * Determines validity of file descriptor
  */
 int locatedFile(int fd) {
-    if (fd == -1) {
-        fprintf(stderr, "located()\n");
+    if (fd < 0) {
+        fprintf(stderr, "locatedFile(): File not found\n");
         return 0;
     }
     return 1;
@@ -280,30 +270,26 @@ int makeSocketConnection(int sock_fd, struct sockaddr* address, int address_size
 /**
  * Attempts to send message over the connection determined by the socket file descriptor
  */
-int sendMessage(int sock_fd, const char* msg) {
-    int sent, i;
-    
-    sent = i = 0;
-    while ((sent = send(sock_fd, &msg[i], sizeof(msg) - i, 0)) != -1 && sent < sizeof(msg))
-        i += sent;
+int sendMessage(int sock_fd, const char* message) {
+    int sent;
 
+    sent = send(sock_fd, message, strlen(message), 0);
     if (sent == -1) {
         perror("send()");
         return 0;
-    } else if (sent < sizeof(msg)) {
-        fprintf(stderr, "sendMessage()\n");
+    } else if (sent < strlen(message)) {
+        fprintf(stderr, "sendMessage(): Incomplete message sent\n");
         return 0;
     }
     return 1;
 }
 
 /**
- * Determines if key is composed exclusively of characters in the allowed character set
- * and is at least as long as len
+ * Determines if s is as at least as long as len
  */
-int sufficientKey(char* key, int len) {
-    if (!allowedChars(key) || strlen(key) < len) {
-        fprintf(stderr, "sufficientKey()\n");
+int sufficientLength(const char* s, int len) {
+    if (strlen(s) < len) {
+        fprintf(stderr, "sufficientLength(): String is shorter than required length\n");
         return 0;
     }
     return 1;

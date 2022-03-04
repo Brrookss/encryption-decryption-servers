@@ -2,11 +2,11 @@
 #define ENC_CLIENT_H
 
 #define ENC_AUTH_MESSAGE "$enc"
-#define MESSAGE_TERM "\n"
+#define FILE_TERMINATOR "\n"
 
 int allowedChars(char*);
-char* appendMessageTerm(char*);
-int authenticated(int);
+char* appendMessageSeperator(char*);
+int authenticated(int, char*);
 char* concatenate(const char*, const char*);
 int* createAllowedCharsHash(void);
 char* createPath(char*, char*);
@@ -18,6 +18,6 @@ void initAddressStruct(struct sockaddr_in*, int);
 int locatedFile(int);
 int makeSocketConnection(int, struct sockaddr*, int);
 int sendMessage(int, const char*);
-int sufficientKey(char*, int);
+int sufficientLength(const char*, int);
 
 #endif /* ENC_CLIENT_H */
