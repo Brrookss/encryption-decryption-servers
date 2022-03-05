@@ -52,42 +52,42 @@ int main(int argc, char* argv[]) {
 }
 
 /**
- * Creates a new character array after appending message seperator; passed array is deallocated
- */
-char* appendMessageSeperator(char* message) {
-    char* buffer;
-    int len;
-
-    len = strlen(message) + strlen(MESSAGE_SEPERATOR);
-    buffer = (char*)calloc(len + 1, sizeof(char));
-    strcpy(buffer, message);
-    strcat(buffer, MESSAGE_SEPERATOR);
-
-    free(message);
-    message = NULL;
-    return buffer;
-}
-
-/**
  * Determines if correct authentication message is received from client
  */
 int authenticate(int sock_fd) {
-    char buffer[256];
-    int received;
+    char buffer[AUTH_BUFFER_SIZE];
+    int i, received;
 
     memset(buffer, '\0', sizeof(buffer));
-    received = recv(sock_fd, &buffer, sizeof(buffer) - 1, 0);
+    i = 0;
+    while ((received = recv(sock_fd, &buffer[i], 1, 0)) > 0 && strcmp(&buffer[i], MESSAGE_SEPERATOR) != 0)
+        i += received;
+    buffer[i] = '\0';
+    
     if (received == -1) {
         perror("recv()");
         return 0;
     }
 
-    buffer[strcspn(buffer, MESSAGE_SEPERATOR)] = '\0';
     if (strcmp(buffer, ENC_AUTH_MESSAGE) != 0) {
         fprintf(stderr, "authenticate(): Failed to authenticate client\n");
         return 0;
     }
     return 1;
+}
+
+/**
+ * Concatenates two character arrays in the order in which they are passed
+ */
+char* concatenate(const char* s1, const char* s2) {
+    int len;
+    char* buffer;
+
+    len = strlen(s1) + strlen(s2) + 1;
+    buffer = (char*)calloc(len, sizeof(char));
+    strcpy(buffer, s1);
+    strcat(buffer, s2);
+    return buffer;
 }
 
 /**
@@ -140,17 +140,6 @@ char* encryptMessage(const char* plaintext, const char* key, char* buffer) {
 }
 
 /**
- * Gets null-terminated authentication confirmation message to be sent to client
- */
-char* getAuthConfirmMessage(void) {
-    char* buffer;
-
-    buffer = (char*)calloc(strlen(ACK) + 1, sizeof(char));
-    strcpy(buffer, ACK);
-    return buffer;
-}
-
-/**
  * Gets key section of response message and stores in buffer
  */
 char* getKey(const char* response, char* buffer) {
@@ -158,7 +147,7 @@ char* getKey(const char* response, char* buffer) {
 
     start = strcspn(response, MESSAGE_SEPERATOR) + 1;
     i = 0;
-    while (strcmp(&response[start], MESSAGE_SEPERATOR) != 0)
+    while (response[start])
         buffer[i++] = response[start++];
     buffer[i] = '\0';
     return buffer;
@@ -172,7 +161,7 @@ int getKeyLength(const char* response) {
 
     start = strcspn(response, MESSAGE_SEPERATOR) + 1;
     len = 0;
-    while (strcmp(&response[start++], MESSAGE_SEPERATOR) != 0)
+    while (response[start++])
         len++;
     return len;
 }
@@ -199,13 +188,23 @@ int getPlaintextLength(const char* response) {
 /**
  * Attempts to store response message in buffer using the connection determined by the socket file descriptor
  */
-int getResponse(int sock_fd, char* buffer, int size) {
-    int received;
+char* getResponse(int sock_fd) {
+    int i, bytes, size;
+    char* buffer;
 
-    received = recv(sock_fd, buffer, size - 1, 0);
-    if (received == -1)
+    size = DATA_BUFFER_SIZE;
+    buffer = (char*)calloc(size, sizeof(char));
+    i = 0;
+    while ((bytes = recv(sock_fd, &buffer[i], 1, 0)) > 0 && strcmp(&buffer[i], MESSAGE_TERMINATOR) != 0) {
+        i += bytes;
+        if (reachedThreshold(i, size))
+            buffer = resize(buffer, size *= 2);
+    }
+    buffer[i] = '\0';
+
+    if (bytes == -1)
         perror("recv()");
-    return received;
+    return buffer;
 }
 
 /**
@@ -213,36 +212,40 @@ int getResponse(int sock_fd, char* buffer, int size) {
  * for encryption; resulting encrypted message is sent back to client and socket connection is closed
  */
 void handleConnection(int sock_fd) {
-    char *auth, *response, *plaintext, *key, *encrypted;
+    char *auth, *response, *plaintext, *key, *encrypted, *encrypted_term;
     int plaintext_len, key_len;
 
     if (!authenticate(sock_fd)) {
-        sendMessage(sock_fd, NAK);
+        auth = concatenate(NAK, MESSAGE_TERMINATOR);
+        sendMessage(sock_fd, auth);
         close(sock_fd);
+
+        free(auth);
+        auth = NULL;
         _exit(2);
     }
-    auth = appendMessageSeperator(getAuthConfirmMessage());
+    auth = concatenate(ACK, MESSAGE_SEPERATOR);
     sendMessage(sock_fd, auth);
 
-    response = (char*)calloc(MESSAGE_BUFFER_SIZE, sizeof(char));
-    getResponse(sock_fd, response, MESSAGE_BUFFER_SIZE * sizeof(char));
-
+    response = getResponse(sock_fd);
     plaintext_len = getPlaintextLength(response);
     plaintext = (char*)calloc(plaintext_len + 1, sizeof(char));
     getPlaintext(response, plaintext);
-    
+
     key_len = getKeyLength(response);
     key = (char*)calloc(key_len + 1, sizeof(char));
     getKey(response, key);
 
     encrypted = (char*)calloc(plaintext_len + 1, sizeof(char));
-    encrypted = encryptMessage(plaintext, key, encrypted);
-    sendMessage(sock_fd, encrypted);
+    encryptMessage(plaintext, key, encrypted);
+    encrypted_term = concatenate(encrypted, MESSAGE_TERMINATOR);
+    sendMessage(sock_fd, encrypted_term);
     close(sock_fd);
 
     free(plaintext); plaintext = NULL;
     free(key); key = NULL;
     free(encrypted); encrypted = NULL;
+    free(encrypted_term); encrypted_term = NULL;
     _exit(0);
 }
 
@@ -257,16 +260,40 @@ void initAddressStruct(struct sockaddr_in* address, int port) {
 }
 
 /**
+ * Determines if size is at or beyond target threshold
+ */
+int reachedThreshold(int size, int target) {
+    return size >= target * BUFFER_THRESHOLD;
+}
+
+/**
+ * Creates array of new size after copying old data; passed array is deallocated
+ */
+char* resize(char* old, int size) {
+    char* new;
+
+    new = (char*)calloc(size, sizeof(char));
+    strcpy(new, old);
+    
+    free(old);
+    old = NULL;
+    return new;
+}
+
+/**
  * Attempts to send message over the connection determined by the socket file descriptor
  */
 int sendMessage(int sock_fd, const char* message) {
-    int sent;
+    int i, sent;
+
+    i = 0;
+    while (message[i] && (sent = send(sock_fd, &message[i], 1, 0)) > 0)
+        i += sent;
     
-    sent = send(sock_fd, message, strlen(message), 0);
     if (sent == -1) {
         perror("send()");
         return 0;
-    } else if (sent < strlen(message)) {
+    } else if (i < strlen(message)) {
         fprintf(stderr, "sendMessage(): Incomplete message sent\n");
         return 0;
     }

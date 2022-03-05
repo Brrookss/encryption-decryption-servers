@@ -5,18 +5,18 @@
 #define FILE_TERMINATOR "\n"
 
 int allowedChars(char*);
-char* appendMessageSeperator(char*);
 int authenticated(int, char*);
 char* concatenate(const char*, const char*);
 int* createAllowedCharsHash(void);
 char* createPath(char*, char*);
-char* getAuthMessage(void);
-int getData(int, char*, int);
+char* getFileData(int);
 int getFileDesc(char*, char*);
-int getResponse(int, char*, int);
+char* getResponse(int);
 void initAddressStruct(struct sockaddr_in*, int);
 int locatedFile(int);
 int makeSocketConnection(int, struct sockaddr*, int);
+int reachedThreshold(int, int);
+char* resize(char*, int);
 int sendMessage(int, const char*);
 int sufficientLength(const char*, int);
 
