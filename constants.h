@@ -5,6 +5,7 @@
 #define AUTH_BUFFER_SIZE 32
 #define BUFFER_THRESHOLD 0.9
 #define DATA_BUFFER_SIZE 2048
+#define LOCALHOST "127.0.0.1"
 #define MESSAGE_SEPERATOR "\17"
 #define MESSAGE_TERMINATOR "$"
 #define NAK "\15"

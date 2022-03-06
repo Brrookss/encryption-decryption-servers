@@ -45,7 +45,7 @@ int main(int argc, char* argv[]) {
         exit(1);
     }
 
-    initAddressStruct(&server_address, atoi(argv[3]));
+    initAddressStruct(&server_address, LOCALHOST, atoi(argv[3]));
     sock_fd = socket(AF_INET, SOCK_STREAM, 0);
     auth = concatenate(ENC_AUTH_MESSAGE, MESSAGE_SEPERATOR);
 
@@ -128,8 +128,8 @@ char* concatenate(const char* s1, const char* s2) {
     int len;
     char* buffer;
 
-    len = strlen(s1) + strlen(s2) + 1;
-    buffer = (char*)calloc(len, sizeof(char));
+    len = strlen(s1) + strlen(s2);
+    buffer = (char*)calloc(len + 1, sizeof(char));
     strcpy(buffer, s1);
     strcat(buffer, s2);
     return buffer;
@@ -226,13 +226,13 @@ char* getResponse(int sock_fd) {
 }
 
 /**
- * Initializes a sockaddr_in structure to be used in the socket connection; localhost is assumed
+ * Initializes a sockaddr_in structure to be used in the socket connection
  */
-void initAddressStruct(struct sockaddr_in* address, int port) {
+void initAddressStruct(struct sockaddr_in* address, char* host, int port) {
     memset((char*)address, '\0', sizeof(*address));
     address->sin_family = AF_INET;
     address->sin_port = htons(port);
-    inet_aton("127.0.0.1", &address->sin_addr);
+    inet_aton(host, &address->sin_addr);
 }
 
 /**
@@ -258,10 +258,10 @@ int makeSocketConnection(int sock_fd, struct sockaddr* address, int address_size
 }
 
 /**
- * Determines if size is beyond target threshold
+ * Determines if size is at or beyond target threshold
  */
 int reachedThreshold(int size, int target) {
-    return size > target * BUFFER_THRESHOLD;
+    return size >= target * BUFFER_THRESHOLD;
 }
 
 /**
@@ -272,7 +272,7 @@ char* resize(char* old, int size) {
 
     new = (char*)calloc(size, sizeof(char));
     strcpy(new, old);
-    
+
     free(old);
     old = NULL;
     return new;

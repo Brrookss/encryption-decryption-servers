@@ -12,7 +12,7 @@ char* createPath(char*, char*);
 char* getFileData(int);
 int getFileDesc(char*, char*);
 char* getResponse(int);
-void initAddressStruct(struct sockaddr_in*, int);
+void initAddressStruct(struct sockaddr_in*, char*, int);
 int locatedFile(int);
 int makeSocketConnection(int, struct sockaddr*, int);
 int reachedThreshold(int, int);

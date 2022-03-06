@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/socket.h>
+#include <sys/wait.h>
 #include <unistd.h>
 #include "constants.h"
 #include "enc_server.h"
@@ -19,19 +20,25 @@ int main(int argc, char* argv[]) {
         exit(1);
     }
 
-    int sock_fd, client_sock_fd;
+    int sock_fd, client_sock_fd, num_processes;
     struct sockaddr_in address, client_address;
     socklen_t client_address_size;
     pid_t pid;
 
-    initAddressStruct(&address, atoi(argv[1]));
+    initAddressStruct(&address, LOCALHOST, atoi(argv[1]));
     sock_fd = socket(AF_INET, SOCK_STREAM, 0);
     client_address_size = sizeof(client_address);
+    num_processes = 0;
 
     if (!connectSocket(sock_fd, (struct sockaddr*)&address))
         exit(2);
     
     while (1) {
+        do {
+            if (waitpid(-1, NULL, WNOHANG) > 0)
+                num_processes--;
+        } while (num_processes > 5);
+
         client_sock_fd = connectClient(sock_fd, (struct sockaddr*)&address, &client_address_size);
         if (connected(client_sock_fd)) {
             pid = fork();
@@ -43,6 +50,7 @@ int main(int argc, char* argv[]) {
                     handleConnection(client_sock_fd);
                     break;
                 default:
+                    num_processes++;
                     break;
             }
         }
@@ -83,8 +91,8 @@ char* concatenate(const char* s1, const char* s2) {
     int len;
     char* buffer;
 
-    len = strlen(s1) + strlen(s2) + 1;
-    buffer = (char*)calloc(len, sizeof(char));
+    len = strlen(s1) + strlen(s2);
+    buffer = (char*)calloc(len + 1, sizeof(char));
     strcpy(buffer, s1);
     strcat(buffer, s2);
     return buffer;
@@ -250,13 +258,13 @@ void handleConnection(int sock_fd) {
 }
 
 /**
- * Initializes a sockaddr_in structure to be used in the socket connection; localhost is assumed
+ * Initializes a sockaddr_in structure to be used in the socket connection
  */
-void initAddressStruct(struct sockaddr_in* address, int port) {
+void initAddressStruct(struct sockaddr_in* address, char* host, int port) {
     memset((char*)address, '\0', sizeof(*address));
     address->sin_family = AF_INET;
     address->sin_port = htons(port);
-    inet_aton("127.0.0.1", &address->sin_addr);
+    inet_aton(host, &address->sin_addr);
 }
 
 /**
@@ -274,7 +282,7 @@ char* resize(char* old, int size) {
 
     new = (char*)calloc(size, sizeof(char));
     strcpy(new, old);
-    
+
     free(old);
     old = NULL;
     return new;

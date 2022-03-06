@@ -15,7 +15,7 @@ char* getPlaintext(const char*, char*);
 int getPlaintextLength(const char*);
 char* getResponse(int);
 void handleConnection(int);
-void initAddressStruct(struct sockaddr_in*, int);
+void initAddressStruct(struct sockaddr_in*, char*, int);
 int reachedThreshold(int, int);
 char* resize(char*, int);
 int sendMessage(int, const char*);
