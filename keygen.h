@@ -1,6 +1,6 @@
-#ifndef KEYGEN_H
-#define KEYGEN_H
+#ifndef __KEYGEN_H__
+#define __KEYGEN_H__
 
 char* generateKey(int);
 
-#endif /* KEYGEN_H */
+#endif /* __KEYGEN_H__ */

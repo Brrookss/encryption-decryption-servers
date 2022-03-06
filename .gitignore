@@ -1,4 +1,8 @@
 *.dSYM
+*.o
+dec_client
+dec_server
 enc_client
 enc_server
+libotp
 keygen
