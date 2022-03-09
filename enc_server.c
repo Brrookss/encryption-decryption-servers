@@ -3,8 +3,8 @@
 #include <string.h>
 #include <sys/wait.h>
 #include <unistd.h>
-#include "libotp.h"
 #include "enc_server.h"
+#include "libotp.h"
 
 /**
  * Driver for encryption server. Server is started up by binding and listening at the given port for
@@ -34,7 +34,7 @@ int main(int argc, char* argv[]) {
         do {
             if (waitpid(-1, NULL, WNOHANG) > 0)
                 num_processes--;
-        } while (num_processes > 5);
+        } while (num_processes > MAX_CONCURRENT_PROCESSES);
 
         client_sock_fd = connectClient(sock_fd, (struct sockaddr*)&address, &client_address_size);
         if (connected(client_sock_fd)) {

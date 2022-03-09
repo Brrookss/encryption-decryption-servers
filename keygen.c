@@ -1,8 +1,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
-#include "libotp.h"
 #include "keygen.h"
+#include "libotp.h"
 
 /**
  * Creates a secret key based on the length argument and the allowed character

@@ -2,8 +2,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-#include "libotp.h"
 #include "dec_client.h"
+#include "libotp.h"
 
 /**
  * Driver for decryption client. Arguments are first verified before an attempt to connect 

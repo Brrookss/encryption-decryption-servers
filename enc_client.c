@@ -2,8 +2,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-#include "libotp.h"
 #include "enc_client.h"
+#include "libotp.h"
 
 /**
  * Driver for encryption client. Arguments are first verified before an attempt to connect 
