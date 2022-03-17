@@ -12,7 +12,8 @@
  */
 int authenticate(int sock_fd, char* message) {
     char buffer[AUTH_BUFFER_SIZE];
-    int i, received;
+    int i;
+    int received;
 
     memset(buffer, '\0', sizeof(buffer));
     i = 0;
@@ -37,7 +38,8 @@ int authenticate(int sock_fd, char* message) {
  */
 int authenticated(int sock_fd, char* auth) {
     char buffer[AUTH_BUFFER_SIZE];
-    int i, received;
+    int i;
+    int received;
 
     memset(buffer, '\0', sizeof(buffer));
     i = 0;
@@ -61,7 +63,10 @@ int authenticated(int sock_fd, char* auth) {
  * Determines if string is composed exclusively of characters in the allowed character set
  */
 int allowedChars(char* s) {
-    int *allowed, i, num, ret;
+    int* allowed;
+    int i;
+    int num;
+    int ret;
 
     allowed = createAllowedCharsHash();
     i = 0;
@@ -131,7 +136,9 @@ int connectSocket(int sock_fd, struct sockaddr* address) {
  * being part of the allowed character set; 0 represents the character being omitted
  */
 int* createAllowedCharsHash(void) {
-    int *hash, i, num;
+    int* hash;
+    int i;
+    int num;
 
     hash = (int*)calloc(NUM_ASCII_CHARS, sizeof(int));
     i = 0;
@@ -146,7 +153,8 @@ int* createAllowedCharsHash(void) {
  * Creates a character array representing the absolute path to target in directory dir
  */
 char* createPath(char* dir, char* target) {
-    char *buffer, seperator[] = "/";
+    char *buffer;
+    char seperator[] = "/";
     int len;
 
     len = strlen(dir) + strlen(seperator) + strlen(target);
@@ -163,7 +171,9 @@ char* createPath(char* dir, char* target) {
  * with a null terminator
  */
 char* getFileData(int fd) {
-    int i, bytes, size;
+    int i;
+    int bytes;
+    int size;
     char* buffer;
 
     size = DATA_BUFFER_SIZE;
@@ -182,7 +192,7 @@ char* getFileData(int fd) {
  * Gets file descriptor for target in the directory dir
  */
 int getFileDesc(char* dir, char* target) {
-    char *abs;
+    char* abs;
     int fd;
 
     abs = createPath(dir, target);
@@ -197,7 +207,8 @@ int getFileDesc(char* dir, char* target) {
  * Gets key section of response message and stores in buffer
  */
 char* getKey(const char* response, char* buffer) {
-    int i, start;
+    int i;
+    int start;
 
     start = strcspn(response, MESSAGE_SEPERATOR) + 1;
     i = 0;
@@ -211,7 +222,8 @@ char* getKey(const char* response, char* buffer) {
  * Gets length of key section of response message
  */
 int getKeyLength(const char* response) {
-    int len, start;
+    int len;
+    int start;
 
     start = strcspn(response, MESSAGE_SEPERATOR) + 1;
     len = 0;
@@ -224,7 +236,9 @@ int getKeyLength(const char* response) {
  * Attempts to store response message in buffer using the connection determined by the socket file descriptor
  */
 char* getResponse(int sock_fd) {
-    int i, bytes, size;
+    int i;
+    int bytes;
+    int size;
     char* buffer;
 
     size = DATA_BUFFER_SIZE;
@@ -318,7 +332,8 @@ char* resize(char* old, int size) {
  * Attempts to send message over the connection determined by the socket file descriptor
  */
 int sendMessage(int sock_fd, const char* message) {
-    int i, sent;
+    int i;
+    int sent;
 
     i = 0;
     while (message[i] && (sent = send(sock_fd, &message[i], 1, 0)) > 0)

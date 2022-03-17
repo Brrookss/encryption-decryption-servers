@@ -15,7 +15,7 @@ int main(int argc, char* argv[]) {
     }
 
     int len;
-    char *key;
+    char* key;
 
     len = atoi(argv[1]);
     key = generateKey(len);
@@ -36,8 +36,10 @@ char* generateKey(int len) {
         return NULL;
     }
 
-    char c, *buffer;
-    int i, num;
+    char* buffer;
+    char c;
+    int i;
+    int num;
 
     srand(time(NULL));
     buffer = (char*)calloc(len + 2, sizeof(char));

@@ -17,7 +17,9 @@ int main(int argc, char* argv[]) {
         exit(1);
     }
 
-    int sock_fd, client_sock_fd, num_processes;
+    int sock_fd;
+    int client_sock_fd;
+    int num_processes;
     struct sockaddr_in address, client_address;
     socklen_t client_address_size;
     pid_t pid;
@@ -60,7 +62,10 @@ int main(int argc, char* argv[]) {
  * Combines ciphertext and key to create a decrypted message and stores in buffer
  */
 char* decryptMessage(const char* ciphertext, const char* key, char* buffer) {
-    int i, j, k, deciphered;
+    int i;
+    int j;
+    int k;
+    int deciphered;
 
     i = 0;
     while (ciphertext[i]) {
@@ -78,8 +83,14 @@ char* decryptMessage(const char* ciphertext, const char* key, char* buffer) {
  * for decryption; resulting plaintext message is sent back to client and socket connection is closed
  */
 void handleConnection(int sock_fd) {
-    char *auth, *response, *ciphertext, *key, *plaintext, *plaintext_term;
-    int ciphertext_len, key_len;
+    char* auth;
+    char* response;
+    char* ciphertext;
+    char* key;
+    char* plaintext;
+    char* plaintext_term;
+    int ciphertext_len;
+    int key_len;
 
     if (!authenticate(sock_fd, DEC_AUTH_MESSAGE)) {
         auth = concatenate(NAK, MESSAGE_TERMINATOR);
@@ -108,9 +119,13 @@ void handleConnection(int sock_fd) {
     sendMessage(sock_fd, plaintext_term);
     close(sock_fd);
 
-    free(ciphertext); ciphertext = NULL;
-    free(key); key = NULL;
-    free(plaintext); plaintext = NULL;
-    free(plaintext_term); plaintext_term = NULL;
+    free(ciphertext);
+    ciphertext = NULL;
+    free(key);
+    key = NULL;
+    free(plaintext);
+    plaintext = NULL;
+    free(plaintext_term);
+    plaintext_term = NULL;
     _exit(0);
 }

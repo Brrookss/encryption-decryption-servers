@@ -16,8 +16,17 @@ int main(int argc, char* argv[]) {
         exit(1);
     }
 
-    char *cwd, *ciphertext, *ciphertext_sep, *key, *auth, *message, *message_term, *plaintext;
-    int ciphertext_fd, key_fd, sock_fd;
+    char* cwd;
+    char* ciphertext;
+    char* ciphertext_sep;
+    char* key;
+    char* auth;
+    char* message;
+    char* message_term;
+    char* plaintext;
+    int ciphertext_fd;
+    int key_fd;
+    int sock_fd;
     struct sockaddr_in server_address;
 
     cwd = (char*)calloc(PATH_BUFFER_SIZE, sizeof(char));
@@ -36,8 +45,10 @@ int main(int argc, char* argv[]) {
     key = getFileData(key_fd);
 
     if (!allowedChars(ciphertext) || !allowedChars(key) || !sufficientLength(key, strlen(ciphertext))) {
-        free(ciphertext); ciphertext = NULL;
-        free(key); key = NULL;
+        free(ciphertext);
+        ciphertext = NULL;
+        free(key);
+        key = NULL;
         exit(1);
     }
 
@@ -46,9 +57,12 @@ int main(int argc, char* argv[]) {
     auth = concatenate(DEC_AUTH_MESSAGE, MESSAGE_SEPERATOR);
 
     if (!makeSocketConnection(sock_fd, (struct sockaddr*)&server_address, sizeof(server_address)) || !sendMessage(sock_fd, auth) || !authenticated(sock_fd, auth)) {
-        free(ciphertext); ciphertext = NULL;
-        free(key); key = NULL;
-        free(auth); auth = NULL;
+        free(ciphertext);
+        ciphertext = NULL;
+        free(key);
+        key = NULL;
+        free(auth);
+        auth = NULL;
         exit(2);
     }
 
@@ -61,12 +75,19 @@ int main(int argc, char* argv[]) {
     close(sock_fd);
     puts(plaintext);
 
-    free(ciphertext); ciphertext = NULL;
-    free(ciphertext_sep); ciphertext_sep = NULL;
-    free(key); key = NULL;
-    free(message); message = NULL;
-    free(message_term); message_term = NULL;
-    free(auth); auth = NULL;
-    free(plaintext); plaintext = NULL;
+    free(ciphertext);
+    ciphertext = NULL;
+    free(ciphertext_sep);
+    ciphertext_sep = NULL;
+    free(key);
+    key = NULL;
+    free(message);
+    message = NULL;
+    free(message_term);
+    message_term = NULL;
+    free(auth);
+    auth = NULL;
+    free(plaintext);
+    plaintext = NULL;
     exit(0);
 }
