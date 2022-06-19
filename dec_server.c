@@ -7,9 +7,11 @@
 #include "libotp.h"
 
 /**
- * Driver for decryption server. Server is started up by binding and listening at the given port for
- * connection attempts which are then handed off to child processes for client authentication, message
- * reception, and decryption
+ * Driver for decryption server.
+ * 
+ * Server is started up by binding and listening at the given port for
+ * connection attempts which are then handed off to child processes for client
+ * authentication, message reception, and decryption.
  */
 int main(int argc, char* argv[]) {
     if (argc != 2) {
@@ -38,7 +40,9 @@ int main(int argc, char* argv[]) {
                 num_processes--;
         } while (num_processes > MAX_CONCURRENT_PROCESSES);
 
-        client_sock_fd = connectClient(sock_fd, (struct sockaddr*)&address, &client_address_size);
+        client_sock_fd = connectClient(
+            sock_fd, (struct sockaddr*)&address, &client_address_size
+        );
         if (connected(client_sock_fd)) {
             pid = fork();
             switch (pid) {
@@ -59,7 +63,7 @@ int main(int argc, char* argv[]) {
 }
 
 /**
- * Combines ciphertext and key to create a decrypted message and stores in buffer
+ * Combines ciphertext and key to create a decrypted message.
  */
 char* decryptMessage(const char* ciphertext, const char* key, char* buffer) {
     int i;
@@ -69,7 +73,8 @@ char* decryptMessage(const char* ciphertext, const char* key, char* buffer) {
 
     i = 0;
     while (ciphertext[i]) {
-        j = (ciphertext[i] != ' ') ? ciphertext[i] - 65 : 26;  // 26 is space character in ALLOWED_CHARS
+        // 26 is space character in ALLOWED_CHARS
+        j = (ciphertext[i] != ' ') ? ciphertext[i] - 65 : 26;
         k = (key[i] != ' ') ? key[i] - 65 : 26;
         deciphered = (j - k < 0) ? j - k + sizeof(ALLOWED_CHARS) : j - k;
         deciphered %= sizeof(ALLOWED_CHARS);
@@ -79,8 +84,11 @@ char* decryptMessage(const char* ciphertext, const char* key, char* buffer) {
 }
 
 /**
- * Client is first authenticated before getting response message composed of ciphertext and key to be used
- * for decryption; resulting plaintext message is sent back to client and socket connection is closed
+ * Handles client connection.
+ * 
+ * Client is first authenticated before getting response message composed of
+ * ciphertext and key to be used for decryption; resulting plaintext message is
+ * sent back to client and socket connection is closed.
  */
 void handleConnection(int sock_fd) {
     char* auth;
