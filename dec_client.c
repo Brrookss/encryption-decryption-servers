@@ -6,9 +6,11 @@
 #include "libotp.h"
 
 /**
- * Driver for decryption client. Arguments are first verified before an attempt to connect 
- * to the server is made. Once connection is authenticated, ciphertext and key are sent to
- * be decrypted. The resulting plaintext is then sent to stdout
+ * Driver for decryption client.
+ * 
+ * Arguments are first verified before an attempt to connect to the server is
+ * made. Once connection is authenticated, ciphertext and key are sent to be
+ * decrypted. Resulting plaintext is sent to standard output.
  */
 int main(int argc, char* argv[]) {
     if (argc != 4) {
@@ -44,26 +46,28 @@ int main(int argc, char* argv[]) {
     ciphertext = getFileData(ciphertext_fd);
     key = getFileData(key_fd);
 
-    if (!allowedChars(ciphertext) || !allowedChars(key) || !sufficientLength(key, strlen(ciphertext))) {
-        free(ciphertext);
-        ciphertext = NULL;
-        free(key);
-        key = NULL;
-        exit(1);
+    if (!allowedChars(ciphertext) || !allowedChars(key)
+        || !sufficientLength(key, strlen(ciphertext))) {
+            free(ciphertext);
+            ciphertext = NULL;
+            free(key);
+            key = NULL;
+            exit(1);
     }
 
     initAddressStruct(&server_address, LOCALHOST, atoi(argv[3]));
     sock_fd = socket(AF_INET, SOCK_STREAM, 0);
     auth = concatenate(DEC_AUTH_MESSAGE, MESSAGE_SEPERATOR);
 
-    if (!makeSocketConnection(sock_fd, (struct sockaddr*)&server_address, sizeof(server_address)) || !sendMessage(sock_fd, auth) || !authenticated(sock_fd, auth)) {
-        free(ciphertext);
-        ciphertext = NULL;
-        free(key);
-        key = NULL;
-        free(auth);
-        auth = NULL;
-        exit(2);
+    if (!makeSocketConnection(sock_fd, (struct sockaddr*)&server_address, sizeof(server_address))
+        || !sendMessage(sock_fd, auth) || !authenticated(sock_fd, auth)) {
+            free(ciphertext);
+            ciphertext = NULL;
+            free(key);
+            key = NULL;
+            free(auth);
+            auth = NULL;
+            exit(2);
     }
 
     ciphertext_sep = concatenate(ciphertext, MESSAGE_SEPERATOR);

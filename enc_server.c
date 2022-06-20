@@ -7,9 +7,11 @@
 #include "libotp.h"
 
 /**
- * Driver for encryption server. Server is started up by binding and listening at the given port for
- * connection attempts which are then handed off to child processes for client authentication, message
- * reception, and encryption
+ * Driver for encryption server.
+ * 
+ * Server is started up by binding and listening at the given port for
+ * connection attempts which are then handed off to child processes for client
+ * authentication, message reception, and encryption.
  */
 int main(int argc, char* argv[]) {
     if (argc != 2) {
@@ -38,7 +40,9 @@ int main(int argc, char* argv[]) {
                 num_processes--;
         } while (num_processes > MAX_CONCURRENT_PROCESSES);
 
-        client_sock_fd = connectClient(sock_fd, (struct sockaddr*)&address, &client_address_size);
+        client_sock_fd = connectClient(
+            sock_fd, (struct sockaddr*)&address, &client_address_size
+        );
         if (connected(client_sock_fd)) {
             pid = fork();
             switch (pid) {
@@ -59,7 +63,7 @@ int main(int argc, char* argv[]) {
 }
 
 /**
- * Combines plaintext and key to create an encrypted message and stores in buffer
+ * Combines plaintext and key to create an encrypted message.
  */
 char* encryptMessage(const char* plaintext, const char* key, char* buffer) {
     int i;
@@ -69,7 +73,8 @@ char* encryptMessage(const char* plaintext, const char* key, char* buffer) {
 
     i = 0;
     while (plaintext[i]) {
-        j = (plaintext[i] != ' ') ? plaintext[i] - 65 : 26;  // 26 is space character in ALLOWED_CHARS
+        // 26 is space character in ALLOWED_CHARS
+        j = (plaintext[i] != ' ') ? plaintext[i] - 65 : 26;  
         k = (key[i] != ' ') ? key[i] - 65 : 26;
         ciphered = (j + k) % sizeof(ALLOWED_CHARS);
         buffer[i++] = ALLOWED_CHARS[ciphered];
@@ -78,8 +83,11 @@ char* encryptMessage(const char* plaintext, const char* key, char* buffer) {
 }
 
 /**
- * Client is first authenticated before getting response message composed of plaintext and key to be used
- * for encryption; resulting encrypted message is sent back to client and socket connection is closed
+ * Handles client connection.
+ * 
+ * Client is first authenticated before getting response message composed of
+ * plaintext and key to be used for encryption; resulting encrypted message is
+ * sent back to client and socket connection is closed.
  */
 void handleConnection(int sock_fd) {
     char* auth;

@@ -6,7 +6,7 @@
 
 /**
  * Creates a secret key based on the length argument and the allowed character
- * set before sending it to stdout
+ * set before sending it to standard output.
  */
 int main(int argc, char* argv[]) {
     if (argc != 2 || atoi(argv[1]) <= 0) {
@@ -28,7 +28,7 @@ int main(int argc, char* argv[]) {
 
 /**
  * Creates a secret key of size len composed of characters from the allowed
- * character set, each chosen using rand(), followed by a newline character
+ * character set, each chosen using rand(), followed by a newline character.
  */
 char* generateKey(int len) {
     if (len <= 0) {
