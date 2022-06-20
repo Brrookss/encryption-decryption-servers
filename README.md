@@ -34,11 +34,11 @@ Some functionalities include:
 
 ### Executing programs
 
-1. Start the encryption server listening on a unique port in the background:
+1. Start the encryption server listening on *enc_port* in the background:
 
 ```./enc_server enc_port &```
 
-2. Start the decryption server listening on a unique port in the background:
+2. Start the decryption server listening on *dec_port* in the background:
 
 ```./dec_server dec_port &```
 
@@ -53,7 +53,7 @@ Notes section):
 ```keygen keylength > key```
 
 5. Encrypt the *plaintext* using the *key* by connecting to the encryption
-server listening on *port* to be saved at *encryptedtext*:
+server listening on *enc_port* to be saved at *encryptedtext*:
 
 ```./enc_client plaintext key enc_port > encryptedtext```
 
@@ -61,8 +61,8 @@ server listening on *port* to be saved at *encryptedtext*:
 
 ```cat encryptedtext```
 
-7. Using the same key, decrypt the encrypted text to be saved at
-*decryptedtext*:
+7. Using the *key*, decrypt *encryptedtext* by connecting to the decryption
+server listening on *dec_port* to be saved at *decryptedtext*:
 
 ```./dec_client encryptedtext key dec_port > decryptedtext```
 
@@ -75,8 +75,8 @@ server listening on *port* to be saved at *encryptedtext*:
 - The plaintext file to be encrypted must **only** contain the 26 capital
 letters and the space character.
 
-- The key must be **at least the same length** as the plaintext it is
-associated with.
+- The key must be **at least the same length** as the plaintext it is be used
+on.
 
 - It is recommended to use port numbers of at least 50000 to prevent conflicts.
 
